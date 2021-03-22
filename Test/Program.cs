@@ -60,7 +60,28 @@ namespace Test
 
             using (FileStream fileDateBinFileStream = new FileStream(fileDateBin, FileMode.Open))
             {
+                // Запись таблицы состоит из заголовка и полей.
+                // Заголовок начинается с двух байт - это длина записи таблицы.
                 short tableRecordLength = TwoBytesToShort(fileDateBinFileStream);
+                //string headingField = StreamOfBytesToString(fileDateBinFileStream, tableRecordLength);
+
+                // Если необходимо использовать маску столбцов, то далее идет маска
+                if (tableStructure.Flag == 0x08)
+                {
+#if DEBUG
+                    Console.WriteLine("Флаг установлен");
+#endif
+                    // Перед маской находится байт, определяющий ее длину. Каждый бит маски определяет присутствие в данной записи соответствующего ему поля.
+                    byte maskLength = OneByteToShort(fileDateBinFileStream);
+                    bool[] maskBools = new bool[maskLength * 8];
+
+
+
+                }
+
+
+                // Сразу после заголовка расположены данные полей, способы чтения которых, определяется типом данных, хранящихся в них
+
             }
         }
 
@@ -70,6 +91,8 @@ namespace Test
             fs.Read(moreInfoSizeBytes, 0, moreInfoSizeBytes.Length);
             return System.Text.Encoding.Default.GetString(moreInfoSizeBytes);
         }
+
+        //private static byte[] StreamOfBytes(FileStream fileStream, )
 
         /// <summary>
         /// Преобразует два байта в число типа short
@@ -83,7 +106,13 @@ namespace Test
             return BitConverter.ToInt16(moreInfoSizeBytes, 0);
         }
 
-
+        private static byte OneByteToShort(FileStream fileStream)
+        {
+            byte[] moreInfoSizeBytes = new byte[1];
+            fileStream.Read(moreInfoSizeBytes, 0, 1);
+            byte i = moreInfoSizeBytes[0];
+            return i; //BitConverter.to ToInt16(moreInfoSizeBytes);
+        }
 
         public static T BuffToStruct<T>(byte[] arr) where T : struct
         {

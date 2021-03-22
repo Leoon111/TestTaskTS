@@ -13,13 +13,13 @@ namespace Test.Models
         /// Запись данных из структуры
         /// </summary>
         /// <param name="dateHeaderFilesTypes">Данные заголовка структуры</param>
-        /// <param name="fieldTypes"></param>
-        /// <param name="extendetFieldTipes"></param>
-        /// <param name="fNames"></param>
+        /// <param name="fieldTypes">Описание атрибутов столбца таблицы</param>
+        /// <param name="extendetFieldTipes">Дополнительные атрибуты столбцов таблицы</param>
+        /// <param name="fNames">Имена полей</param>
         public TableStructure(ModelStructs.Header_files_types dateHeaderFilesTypes,
-            ModelStructs.Field_type[] fieldTypes,
-            ModelStructs.Extendet_field_tipe[] extendetFieldTipes,
-            string[] fNames)
+                              ModelStructs.Field_type[] fieldTypes,
+                              ModelStructs.Extendet_field_tipe[] extendetFieldTipes,
+                              string[] fNames)
         {
             // инициализация данных заголовка структуры
             StructureSize = dateHeaderFilesTypes.size;
