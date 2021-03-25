@@ -60,7 +60,7 @@ namespace Test.Models
         /// </summary>
         public char Flag { get; }
 
-        public FieldAttribute[] FieldAttributes;
+        public TableFieldAttribute[] TableFieldAttributes;
 
         public AdditionalTableFieldAttributes[] AdditionalTableFieldAttributes;
 
@@ -87,10 +87,10 @@ namespace Test.Models
 
         private void SetFieldAttributes(ModelStructs.Field_type[] fieldTypes)
         {
-            FieldAttributes = new FieldAttribute[NumberAllColumnsInTable];
+            TableFieldAttributes = new TableFieldAttribute[NumberAllColumnsInTable];
             for (int a = 0; a < fieldTypes.Length; a++)
             {
-                FieldAttributes[a] = new FieldAttribute(fieldTypes[a]);
+                TableFieldAttributes[a] = new TableFieldAttribute(fieldTypes[a]);
             }
         }
     }

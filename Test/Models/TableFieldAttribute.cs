@@ -7,9 +7,9 @@ namespace Test.Models
     /// <summary>
     /// Описание атрибутов одного столбца таблицы
     /// </summary>
-    public class FieldAttribute
+    public class TableFieldAttribute
     {
-        public FieldAttribute(ModelStructs.Field_type fieldType)
+        public TableFieldAttribute(ModelStructs.Field_type fieldType)
         {
             TableColumnCode = new string(fieldType.cod);
             DataLength = fieldType.length;
