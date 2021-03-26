@@ -2,7 +2,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using Test.Models;
-
+using System.Linq;
 
 namespace Test
 {
@@ -60,29 +60,44 @@ namespace Test
 
             using (FileStream fileDateBinFileStream = new FileStream(fileDateBin, FileMode.Open))
             {
-                // Запись таблицы состоит из заголовка и полей.
-                // Заголовок начинается с двух байт - это длина записи таблицы.
-                short tableRecordLength = TwoBytesToShort(fileDateBinFileStream);
-                //string headingField = StreamOfBytesToString(fileDateBinFileStream, tableRecordLength);
 
-                // Если необходимо использовать маску столбцов, то далее идет маска
-                if ((0x08 & tableStructure.Flag) == 0x08)
+                for (var i = 0; i < tableStructure.StructureSize; i++)
                 {
-                    // Перед маской находится байт, определяющий ее длину. Каждый бит маски определяет присутствие в данной записи соответствующего ему поля.
-                    byte maskLength = ReadOneByte(fileDateBinFileStream);
-                    int bitsMask = 0;
-                    // 4 байта
-                    if (maskLength == 4)
-                        bitsMask = FourBytesToInt(fileDateBinFileStream);
-                    else
+                    // Запись таблицы состоит из заголовка и полей.
+                    // Заголовок начинается с двух байт - это длина записи таблицы.
+                    short tableRecordLength = TwoBytesToShort(fileDateBinFileStream);
+                    //string headingField = StreamOfBytesToString(fileDateBinFileStream, tableRecordLength);
+
+                    // Если необходимо использовать маску столбцов, то далее идет маска
+                    if ((0x08 & tableStructure.Flag) == 0x08)
                     {
-                        // проверка
-                        new ArgumentException(message: "Другая длина маски");
+                        // Перед маской находится байт, определяющий ее длину. Каждый бит маски определяет присутствие в данной записи соответствующего ему поля.
+                        byte maskLength = ReadOneByte(fileDateBinFileStream);
+                        tableRecordLength -= 1;
+                        int bitsMask = 0;
+                        // 4 байта
+                        if (maskLength == 4)
+                        {
+                            bitsMask = FourBytesToInt(fileDateBinFileStream);
+                            tableRecordLength -= 4;
+                        }
+
+                        if (maskLength == 2)
+                        {
+                            bitsMask = TwoBytesToShort(fileDateBinFileStream);
+                            tableRecordLength -= 2;
+                        }
+                        //else
+                        //        {
+                        //            // проверка
+                        //            throw new ArgumentException(message: "Другая длина маски");
+                        //        }
+
+                        ReadSelecToMasktDataFileSream(fileDateBinFileStream, bitsMask, tableStructure, tableRecordLength);
+                        //var a = StreamOfBytesToString(fileDateBinFileStream, tableRecordLength);
+
                     }
-
-                    ReadSelectDataFileSream(fileDateBinFileStream, bitsMask, tableStructure);
-
-
+                    else throw new ArgumentException("Флаг использования маски отсутствует");
                 }
 
 
@@ -97,22 +112,92 @@ namespace Test
         /// <param name="fileStream"></param>
         /// <param name="bitsMask"></param>
         /// <param name="tableStructure"></param>
-        public static void ReadSelectDataFileSream(FileStream fileStream, long bitsMask, TableStructure tableStructure) 
+        private static void ReadSelecToMasktDataFileSream(FileStream fileStream, long bitsMask, TableStructure tableStructure, int tableRecordLength)
         {
+            var remainingBytes = tableRecordLength;
             short field = 0;
             // перебираем биты маски, чтоб определить что нам читать в файле
             foreach (FieldNumberEnum fieldNumber in Enum.GetValues(typeof(FieldNumberEnum)))
             {
+                if (tableStructure.TableFieldAttributes.Length < field) break;
                 // если поле в маске включено
                 if ((bitsMask | (long)fieldNumber) == bitsMask)
                 {
                     // определяем тип поля, читаем его
+                    // число
+                    if (tableStructure.TableFieldAttributes[field].DataType == 0x14
+                        || tableStructure.TableFieldAttributes[field].DataType == 0x16
+                        || tableStructure.TableFieldAttributes[field].DataType == 0x18)
+                    {
 
+                        var a = tableStructure.TableFieldAttributes[field].TableColumnCode;
+                        var b = tableStructure.TableFieldAttributes[field].DataLength;
+                        var d = tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable;
+                        if (tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable == 0x0B
+                            || tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable == 0x05)
+                        {
+
+                        }
+                        var e = tableStructure.AdditionalTableFieldAttributes[field].ColumnOrdinal;
+
+                        var f = 0;
+                        if (b == 2)
+                            f = TwoBytesToShort(fileStream);
+
+                        remainingBytes -= b;
+
+                        field++;
+                        continue;
+                    }
+                    // строка
+                    if (tableStructure.TableFieldAttributes[field].DataType == 0x22
+                        || tableStructure.TableFieldAttributes[field].DataType == 0x2C
+                        || tableStructure.TableFieldAttributes[field].DataType == 0x12)
+                    {
+                        var a = tableStructure.TableFieldAttributes[field].TableColumnCode;
+                        var b = tableStructure.TableFieldAttributes[field].DataLength;
+                        var d = tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable;
+                        if (tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable == 0x0B
+                            || tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable == 0x05)
+                        {
+
+                        }
+                        var e = tableStructure.AdditionalTableFieldAttributes[field].ColumnOrdinal;
+                        // длина данных в таблице важнее, чем длина данных в описании таблицы.
+                        if (b > remainingBytes) b = (ushort)remainingBytes;
+                        var f = StreamOfBytesToString(fileStream, b);
+
+                        remainingBytes -= b;
+
+                        field++;
+                        continue;
+                    }
+                    // За данным полем перечисляются поля, которые используются, как субтаблица
+                    if (tableStructure.TableFieldAttributes[field].DataType == 0x0A
+                        || tableStructure.TableFieldAttributes[field].DataType == 0x1A)
+                    {
+
+
+                        field++;
+                        continue;
+                    }
+                    // Содержит множество чисел, разделенных квадратными скобками
+                    if (tableStructure.TableFieldAttributes[field].DataType == 0x26)
+                    {
+
+
+                        field++;
+                        continue;
+                    }
+                    else throw new ArgumentException("Неизвестный тип данных в поле");
                 }
 
                 field++;
-                if(tableStructure.TableFieldAttributes.Length < field) return;
             }
+
+            string aa;
+            if (remainingBytes > 0)
+                aa = StreamOfBytesToString(fileStream, remainingBytes);
 
         }
 
@@ -120,7 +205,9 @@ namespace Test
         {
             byte[] moreInfoSizeBytes = new byte[fieldNameLenght];
             fs.Read(moreInfoSizeBytes, 0, moreInfoSizeBytes.Length);
-            return System.Text.Encoding.Default.GetString(moreInfoSizeBytes);
+            //var m = Convert.ToBase64String(moreInfoSizeBytes);
+            var st = System.Text.Encoding.ASCII.GetString(moreInfoSizeBytes);
+            return st;
         }
 
         //private static byte[] StreamOfBytes(FileStream fileStream, )
