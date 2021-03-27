@@ -13,7 +13,7 @@ namespace Test.Models
             ModelStructs.Extendet_field_tipe extendetFieldTipe)
         {
             BelongingToSubtable = extendetFieldTipe.type_gruppen;
-            ColumnOrdinal = extendetFieldTipe.npp;
+            ColumnNumber = extendetFieldTipe.npp;
         }
         /// <summary>
         /// Код, определяющий принадлежность поля к субтаблице.
@@ -22,6 +22,6 @@ namespace Test.Models
         /// <summary>
         /// Порядковый номер столбца
         /// </summary>
-        public ushort ColumnOrdinal { get; }
+        public ushort ColumnNumber { get; }
     }
 }

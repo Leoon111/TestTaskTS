@@ -9,19 +9,21 @@ namespace Test
     class Program
     {
         // todo отрефакторить файл Main
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             TableStructure tableStructure;
-
+            EtkaDataReady etkaDataReady;
             // Пути к файлам указаны тестово, прикрутить открытие файла
-            string tableHeaderFileFdt = @"..\..\..\Data\Katalog.fdt";
-            string fileDateBin = @"..\..\..\Data\KAT003.BIN";
+            var tableHeaderFileFdt = @"..\..\..\Data\Katalog.fdt";
+            var fileDateBin = @"..\..\..\Data\KAT005.BIN";
+
+            #region Чтение файла заголовка таблицы .fdt
 
             using (FileStream tableHeaderFileFdtFileStream = new FileStream(tableHeaderFileFdt, FileMode.Open))
             {
                 var buffHeaderFilesTypesSize = new byte[Marshal.SizeOf(typeof(ModelStructs.Header_files_types))]; // Создаем буффер необходимого размера
                 tableHeaderFileFdtFileStream.Read(buffHeaderFilesTypesSize, 0, buffHeaderFilesTypesSize.Length); // Читаем необходимый объем из файла
-                ModelStructs.Header_files_types headerFilesTypes = BuffToStruct<ModelStructs.Header_files_types>(buffHeaderFilesTypesSize); // Преобразуем byte[] в структуру
+                var headerFilesTypes = BuffToStruct<ModelStructs.Header_files_types>(buffHeaderFilesTypesSize); // Преобразуем byte[] в структуру
 
                 // тестовый вывод проверки правильности кодировки символов в файле
 #if DEBUG
@@ -56,7 +58,11 @@ namespace Test
                 }
                 // вносим полученные данные из файла в модель данных
                 tableStructure = new TableStructure(headerFilesTypes, fieldTypes, еxtendetFieldTipes, fieldNames);
+
+                etkaDataReady = new EtkaDataReady(tableStructure);
             }
+
+            #endregion
 
             using (FileStream fileDateBinFileStream = new FileStream(fileDateBin, FileMode.Open))
             {
@@ -87,13 +93,14 @@ namespace Test
                             bitsMask = TwoBytesToShort(fileDateBinFileStream);
                             tableRecordLength -= 2;
                         }
-                        //else
-                        //        {
-                        //            // проверка
-                        //            throw new ArgumentException(message: "Другая длина маски");
-                        //        }
-
-                        ReadSelecToMasktDataFileSream(fileDateBinFileStream, bitsMask, tableStructure, tableRecordLength);
+                        if (maskLength != 2 && maskLength != 4)
+                        {
+                            // проверка
+                            throw new ArgumentException(message: "Другая длина маски");
+                        }
+                        
+                        etkaDataReady.ColumDataTamble.Add(new string[tableStructure.TableFieldAttributes.Length]);
+                        etkaDataReady.ColumDataTamble[i] = ReadSelecToMasktDataFileSream(fileDateBinFileStream, bitsMask, tableStructure, tableRecordLength);
                         //var a = StreamOfBytesToString(fileDateBinFileStream, tableRecordLength);
 
                     }
@@ -112,8 +119,10 @@ namespace Test
         /// <param name="fileStream"></param>
         /// <param name="bitsMask"></param>
         /// <param name="tableStructure"></param>
-        private static void ReadSelecToMasktDataFileSream(FileStream fileStream, long bitsMask, TableStructure tableStructure, int tableRecordLength)
+        private static string[] ReadSelecToMasktDataFileSream(FileStream fileStream, long bitsMask, TableStructure tableStructure, int tableRecordLength)
         {
+            // строка полей для возвращаемого значения
+            var fieldEtkaDataReady = new string[tableStructure.TableFieldAttributes.Length];
             var remainingBytes = tableRecordLength;
             //short field = 0;
             var s = Convert.ToString(bitsMask, 2);
@@ -140,14 +149,14 @@ namespace Test
                         if (tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable == 0x0B
                             || tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable == 0x05)
                         {
-
+                            throw new ArgumentException("Субтаблица здесь");
                         }
-                        var e = tableStructure.AdditionalTableFieldAttributes[field].ColumnOrdinal;
+                        var e = tableStructure.AdditionalTableFieldAttributes[field].ColumnNumber;
 
                         var f = 0;
                         if (b == 2)
                             f = TwoBytesToShort(fileStream);
-
+                        fieldEtkaDataReady[field] = f.ToString();
                         remainingBytes -= b;
 
                         continue;
@@ -163,13 +172,14 @@ namespace Test
                         if (tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable == 0x0B
                             || tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable == 0x05)
                         {
-
+                            throw new ArgumentException("Субтаблица здесь");
                         }
-                        var e = tableStructure.AdditionalTableFieldAttributes[field].ColumnOrdinal;
+                        var e = tableStructure.AdditionalTableFieldAttributes[field].ColumnNumber;
                         // длина данных в таблице важнее, чем длина данных в описании таблицы.
                         if (b > remainingBytes) b = (ushort)remainingBytes;
                         var f = StreamOfBytesToString(fileStream, b);
 
+                        fieldEtkaDataReady[field] = f;
                         remainingBytes -= b;
 
                         continue;
@@ -191,13 +201,14 @@ namespace Test
                         if (tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable == 0x0B
                             || tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable == 0x05)
                         {
-
+                            throw new ArgumentException("Субтаблица здесь");
                         }
-                        var e = tableStructure.AdditionalTableFieldAttributes[field].ColumnOrdinal;
+                        var e = tableStructure.AdditionalTableFieldAttributes[field].ColumnNumber;
                         // длина данных в таблице важнее, чем длина данных в описании таблицы.
                         if (b > remainingBytes) b = (ushort)remainingBytes;
                         var f = StreamOfBytesToString(fileStream, b);
 
+                        fieldEtkaDataReady[field] = f;
                         remainingBytes -= b;
 
                         continue;
@@ -206,11 +217,12 @@ namespace Test
                 }
 
             }
-
+            // Читаем биты, которые остались как строку, возможно понадобится
             string aa;
             if (remainingBytes > 0)
                 aa = StreamOfBytesToString(fileStream, remainingBytes);
 
+            return fieldEtkaDataReady;
         }
 
         private static string StreamOfBytesToString(FileStream fs, int fieldNameLenght)

@@ -26,7 +26,8 @@ namespace Test.Models
             NumberUsedColumnsInTable = dateHeaderFilesTypes.count_field_r;
             NumberAllColumnsInTable = dateHeaderFilesTypes.count_field_all;
             // убираем ненужные символы в конце строки
-            FileNameTableItself = new string(dateHeaderFilesTypes.name_f_bin).Remove(dateHeaderFilesTypes.name_f_bin.Length - 5);
+            FileNameTableItself =
+                new string(dateHeaderFilesTypes.name_f_bin).Remove(dateHeaderFilesTypes.name_f_bin.Length - 5);
             IndexFileName = new string(dateHeaderFilesTypes.name_f_pnt).Remove(dateHeaderFilesTypes.name_f_pnt.Length - 5);
             Flag = dateHeaderFilesTypes.flag;
 
