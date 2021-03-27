@@ -115,13 +115,17 @@ namespace Test
         private static void ReadSelecToMasktDataFileSream(FileStream fileStream, long bitsMask, TableStructure tableStructure, int tableRecordLength)
         {
             var remainingBytes = tableRecordLength;
-            short field = 0;
+            //short field = 0;
+            var s = Convert.ToString(bitsMask, 2);
+            var maskArray = s.Select(x => byte.Parse(x.ToString())).ToArray();
+
             // перебираем биты маски, чтоб определить что нам читать в файле
-            foreach (FieldNumberEnum fieldNumber in Enum.GetValues(typeof(FieldNumberEnum)))
+            //foreach (FieldNumberEnum fieldNumber in Enum.GetValues(typeof(FieldNumberEnum)))
+            for (int field = 0; field < maskArray.Length; field++)
             {
                 if (tableStructure.TableFieldAttributes.Length < field) break;
                 // если поле в маске включено
-                if ((bitsMask | (long)fieldNumber) == bitsMask)
+                if (maskArray[field] == 1)
                 {
                     // определяем тип поля, читаем его
                     // число
@@ -146,7 +150,6 @@ namespace Test
 
                         remainingBytes -= b;
 
-                        field++;
                         continue;
                     }
                     // строка
@@ -169,7 +172,6 @@ namespace Test
 
                         remainingBytes -= b;
 
-                        field++;
                         continue;
                     }
                     // За данным полем перечисляются поля, которые используются, как субтаблица
@@ -178,21 +180,31 @@ namespace Test
                     {
 
 
-                        field++;
                         continue;
                     }
                     // Содержит множество чисел, разделенных квадратными скобками
                     if (tableStructure.TableFieldAttributes[field].DataType == 0x26)
                     {
+                        var a = tableStructure.TableFieldAttributes[field].TableColumnCode;
+                        var b = tableStructure.TableFieldAttributes[field].DataLength;
+                        var d = tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable;
+                        if (tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable == 0x0B
+                            || tableStructure.AdditionalTableFieldAttributes[field].BelongingToSubtable == 0x05)
+                        {
 
+                        }
+                        var e = tableStructure.AdditionalTableFieldAttributes[field].ColumnOrdinal;
+                        // длина данных в таблице важнее, чем длина данных в описании таблицы.
+                        if (b > remainingBytes) b = (ushort)remainingBytes;
+                        var f = StreamOfBytesToString(fileStream, b);
 
-                        field++;
+                        remainingBytes -= b;
+
                         continue;
                     }
                     else throw new ArgumentException("Неизвестный тип данных в поле");
                 }
 
-                field++;
             }
 
             string aa;
@@ -205,7 +217,7 @@ namespace Test
         {
             byte[] moreInfoSizeBytes = new byte[fieldNameLenght];
             fs.Read(moreInfoSizeBytes, 0, moreInfoSizeBytes.Length);
-            //var m = Convert.ToBase64String(moreInfoSizeBytes);
+            var m = Convert.ToBase64String(moreInfoSizeBytes);
             var st = System.Text.Encoding.ASCII.GetString(moreInfoSizeBytes);
             return st;
         }
