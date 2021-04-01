@@ -10,7 +10,7 @@ namespace Test.Models
         private readonly string[] _fieldName;
         private List<string[]> _columDataTamble;
         private readonly string[] _tableColumnCode;
-        private readonly List<string> _dataType;
+        //private readonly List<string> _dataType;
         private readonly int[] _columNumberFromData;
 
         /// <summary>
@@ -41,6 +41,7 @@ namespace Test.Models
 
 
         // todo заменить все на массивы, коллекции здесь для тестирования
+
         /// <summary>Имена полей в таблице</summary>
         public string[] FieldName => _fieldName;
 
@@ -55,7 +56,7 @@ namespace Test.Models
         public string[] TableColumnCode => _tableColumnCode;
 
         /// <summary>(вспомогательное, не реализовано) Тип данных столбца</summary>
-        public List<string> DataType => _dataType;
+        //public List<string> DataType => _dataType;
 
         /// <summary>(вспомогательное) Порядковый номер столбца из данных описания таблицы</summary>
         public int[] ColumNumberFromData => _columNumberFromData;

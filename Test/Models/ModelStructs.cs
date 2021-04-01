@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Runtime.InteropServices;
 
-namespace Test
+namespace Test.Models
 {
     public class ModelStructs
     {
@@ -71,7 +68,7 @@ namespace Test
             // код, определяющий принадлежность его к субтаблице. Если значение данного поля равно 0x0B или 0x05,
             // то данное поле представляет собой субтаблицу.
             public ushort type_gruppen;
-            // порядковый номыер
+            // порядковый номер
             public ushort npp;
         }
     }
